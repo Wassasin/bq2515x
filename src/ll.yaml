@@ -1,0 +1,504 @@
+register_address_type: u8
+registers:
+  stat:
+    rw_type: ro
+    address: 0x00
+    size_bits: 24
+    fields:
+      vin_vgood:
+        type: bool
+        start: 0
+      thermreg_active:
+        type: bool
+        start: 1
+      vindpm_active:
+        type: bool
+        start: 2
+      vdppm_active:
+        type: bool
+        start: 3
+      iinlim_active:
+        type: bool
+        start: 4
+      charge_done:
+        type: bool
+        start: 5
+      chrg_cv:
+        type: bool
+        start: 6
+      ts_hot:
+        type: bool
+        start: 8
+      ts_warm:
+        type: bool
+        start: 9
+      ts_cool:
+        type: bool
+        start: 10
+      ts_cold:
+        type: bool
+        start: 11
+      bat_uvlo_fault:
+        type: bool
+        start: 12
+      bat_ocp_fault:
+        type: bool
+        start: 13
+      vin_ovp_fault:
+        type: bool
+        start: 15
+      ts_open:
+        type: bool
+        start: 16
+      comp3_alarm:
+        type: bool
+        start: 20
+      comp2_alarm:
+        type: bool
+        start: 21
+      comp1_alarm:
+        type: bool
+        start: 22
+  flag:
+    description: Flags that clear on read.
+    rw_type: ro
+    address: 0x03
+    size_bits: 32
+    fields:
+      vin_vgood:
+        type: bool
+        start: 0
+      thermreg_active:
+        type: bool
+        start: 1
+      vindpm_active:
+        type: bool
+        start: 2
+      vdppm_active:
+        type: bool
+        start: 3
+      iinlim_active:
+        type: bool
+        start: 4
+      charge_done:
+        type: bool
+        start: 5
+      chrg_cv:
+        type: bool
+        start: 6
+      ts_hot:
+        type: bool
+        start: 8
+      ts_warm:
+        type: bool
+        start: 9
+      ts_cool:
+        type: bool
+        start: 10
+      ts_cold:
+        type: bool
+        start: 11
+      bat_uvlo_fault:
+        type: bool
+        start: 12
+      bat_ocp_fault:
+        type: bool
+        start: 13
+      vin_ovp_fault:
+        type: bool
+        start: 15
+      ts_open:
+        type: bool
+        start: 16
+      comp3_alarm:
+        type: bool
+        start: 20
+      comp2_alarm:
+        type: bool
+        start: 21
+      comp1_alarm:
+        type: bool
+        start: 22
+      adc_ready:
+        type: bool
+        start: 23
+      mrreset_warn:
+        type: bool
+        start: 24
+      mrwake2_timeout:
+        type: bool
+        start: 25
+      mrwake1_timeout:
+        type: bool
+        start: 26
+      ldo_ocp_fault:
+        type: bool
+        start: 28
+      safety_tmr_fault:
+        type: bool
+        start: 29
+      wd_fault:
+        type: bool
+        start: 30
+  mask:
+    copy_of: flag
+    description: Mask for all flags
+    rw_type: rw
+    address: 0x07
+  vbat_ctrl:
+    rw_type: rw
+    address: 0x12
+    size_bits: 8
+    decription: Battery Regulation Voltage
+    fields:
+      vbat_ctrl:
+        type: u8
+        start: 0
+        end: 7
+  ichg_ctrl:
+    rw_type: rw
+    address: 0x13
+    size_bits: 8
+    decription: Fast Charge Current
+    fields:
+      ichg_ctrl:
+        type: u8
+        start: 0
+        end: 8
+  pchrgctrl:
+    rw_type: rw
+    address: 0x14
+    size_bits: 8
+    decription: Pre-Charge Control
+    fields:
+      iprechg:
+        type: u8
+        start: 0
+        end: 5
+      icharge_range:
+        type: bool
+        start: 7
+  termctrl:
+    rw_type: rw
+    address: 0x15
+    size_bits: 8
+    decription: Termination Control
+    fields:
+      term_disable:
+        type: bool
+        start: 0
+      iterm:
+        type: u8
+        start: 1
+        end: 6
+  buvlo:
+    rw_type: rw
+    address: 0x16
+    size_bits: 8
+    decription: Battery Undervoltage
+    fields:
+      buvlo:
+        type: u8
+        start: 0
+        end: 3
+      ibat_ocp_ilim:
+        type: u8
+        start: 3
+        end: 5
+      vlowv_sel:
+        type: bool
+        start: 5
+  chargerctrl:
+    rw_type: rw
+    address: 0x17
+    size_bits: 16
+    decription: Charger Control
+    fields:
+      safety_timer_limit:
+        type: u8
+        start: 1
+        end: 3
+      twoxtmr_en:
+        type: bool
+        start: 3
+      watchdog_disable:
+        type: bool
+        start: 4
+      vrh_thresh:
+        type: bool
+        start: 5
+      ts_control_mode:
+        type: bool
+        start: 6
+      ts_en:
+        type: bool
+        start: 7
+      therm_reg:
+        type: u8
+        start: 8
+        end: 10
+      dppm_dis:
+        type: bool
+        start: 10
+      vindpm:
+        type: u8
+        start: 12
+        end: 15
+      vindpm_dis:
+        type: bool
+        start: 15
+  ilimctrl:
+    rw_type: rw
+    address: 0x19
+    size_bits: 8
+    decription: Input Current Limit
+    fields:
+      ilimctrl:
+        type: u8
+        start: 0
+        end: 3
+  ldoctrl:
+    rw_type: rw
+    address: 0x1D
+    size_bits: 8
+    decription: LDO Control
+    fields:
+      ldo_switch_config:
+        type: bool
+        start: 1
+      vldo:
+        type: u8
+        start: 2
+        end: 7
+      en_ls_ldo:
+        type: bool
+        start: 7
+  mrctrl:
+    rw_type: rw
+    address: 0x30
+    size_bits: 8
+    decription: Manual Reset Control
+    fields:
+      mr_hw_reset:
+        type: u8
+        start: 1
+        end: 3
+      mr_reset_warn:
+        type: u8
+        start: 3
+        end: 5
+      mr_wake2_timer:
+        type: bool
+        start: 5
+      mr_wake1_timer:
+        type: bool
+        start: 6
+      mr_reset_vin:
+        type: bool
+        start: 7
+  icctrl:
+    rw_type: rw
+    address: 0x35
+    size_bits: 24
+    decription: Integrated Circuit Control
+    fields:
+      sw_reset:
+        type: bool
+        start: 0
+      hw_reset:
+        type: bool
+        start: 1
+      global_int_mask:
+        type: bool
+        start: 2
+      autowake:
+        type: u8
+        start: 4
+        end: 6
+      en_ship_mode:
+        type: bool
+        start: 7
+      pmid_mode:
+        type: u8
+        start: 8
+        end: 10
+      pg_mode:
+        type: u8
+        start: 10
+        end: 12
+      adcin_mode:
+        type: bool
+        start: 13
+      mr_lpress_action:
+        type: u8
+        start: 14
+        end: 16
+      charger_disable:
+        type: bool
+        start: 16
+      hwreset_14s_wd:
+        type: bool
+        start: 17
+      gpo_pg:
+        type: bool
+        start: 20
+      pmid_reg_ctrl:
+        type: u8
+        start: 21
+        end: 24
+  adcctrl:
+    rw_type: rw
+    address: 0x40
+    size_bits: 16
+    decription: ADC Control
+    fields:
+      adc_comp1:
+        type: u8
+        start: 0
+        end: 3
+      adc_conv_speed:
+        type: u8
+        start: 3
+        end: 5
+      adc_conv_start:
+        type: bool
+        start: 5
+      adc_read_rate:
+        type: u8
+        start: 6
+        end: 8
+      adc_comp3:
+        type: u8
+        start: 10
+        end: 13
+      adc_comp2:
+        type: u8
+        start: 13
+        end: 16
+  adc_data:
+    rw_type: ro
+    address: 0x42
+    size_bits: 112
+    fields:
+      vbat:
+        type: u16
+        start: 0
+        end: 16
+      ts:
+        type: u16
+        start: 16
+        end: 32
+      ichg:
+        type: u16
+        start: 32
+        end: 48
+      adcin:
+        type: u16
+        start: 48
+        end: 64
+      vin:
+        type: u16
+        start: 64
+        end: 80
+      pmid:
+        type: u16
+        start: 80
+        end: 96
+      iin:
+        type: u16
+        start: 96
+        end: 112
+  adcalarm_comp1:
+    rw_type: rw
+    address: 0x52
+    size_bits: 16
+    fields:
+      adcalarm_m:
+        type: u16
+        start: 0
+        end: 8
+      adcalarm_l:
+        type: u16
+        start: 12
+        end: 16
+      adcalarm_above:
+        type: bool
+        start: 11
+  adcalarm_comp2:
+    copy_of: adcalarm_comp1
+    address: 0x54
+  adcalarm_comp3:
+    copy_of: adcalarm_comp1
+    address: 0x56
+  adc_read_en:
+    rw_type: rw
+    address: 0x58
+    size_bits: 8
+    fields:
+      adcin:
+        type: bool
+        start: 1
+      ts:
+        type: bool
+        start: 2
+      vbat:
+        type: bool
+        start: 3
+      vin:
+        type: bool
+        start: 4
+      ichg:
+        type: bool
+        start: 5
+      pmid:
+        type: bool
+        start: 6
+      iin:
+        type: bool
+        start: 7
+      value:
+        type: u8
+        start: 1
+        end: 8
+  ts_fastchgctrl:
+    rw_type: rw
+    address: 0x61
+    size_bits: 8
+    fields:
+      ts_ichrg:
+        type: u8
+        start: 0
+        end: 3
+      ts_vbat_reg:
+        type: u8
+        start: 4
+        end: 7
+  ts_cold:
+    rw_type: rw
+    address: 0x62
+    size_bits: 8
+    fields:
+      value:
+        type: u8
+        start: 0
+        end: 8
+  ts_cool:
+    copy_of: ts_cold
+    address: 0x63
+  ts_warm:
+    copy_of: ts_cold
+    address: 0x64
+  ts_hot:
+    copy_of: ts_cold
+    address: 0x65
+  device_id:
+    description: Fixed device identifier based on chip type.
+    rw_type: ro
+    address: 0x6f
+    size_bits: 8
+    fields:
+      device_id:
+        type: u8
+        start: 0
+        end: 8
+        conversion: DeviceID
