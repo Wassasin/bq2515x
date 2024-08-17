@@ -253,10 +253,11 @@ registers:
     size_bits: 8
     decription: Input Current Limit
     fields:
-      ilimctrl:
+      ilim:
         type: u8
         start: 0
         end: 3
+        conversion: CurrentLimit
   ldoctrl:
     rw_type: rw
     address: 0x1D
@@ -367,6 +368,7 @@ registers:
         type: u8
         start: 6
         end: 8
+        conversion: AdcMode
       adc_comp3:
         type: u8
         start: 10

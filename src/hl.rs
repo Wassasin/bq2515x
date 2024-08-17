@@ -1,12 +1,9 @@
-use core::{
-    convert::Infallible,
-    ops::{Deref, DerefMut},
-};
+pub mod lowpower;
 
-use embedded_hal::digital::OutputPin;
-use embedded_hal_async::{delay::DelayNs, i2c::I2c};
+use embedded_hal_async::i2c::I2c;
 
 use crate::ll::Bq2515xDevice;
+use crate::prelude::*;
 
 pub struct Bq2515x<I2C> {
     dev: Bq2515xDevice<I2C>,
@@ -25,71 +22,37 @@ where
     pub fn ll(&mut self) -> &mut Bq2515xDevice<I2C> {
         &mut self.dev
     }
-}
 
-pub struct Bq2515xLowPower<I2C, P, D> {
-    inner: Bq2515x<I2C>,
-    nlp_pin: P,
-    delay: D,
-}
-
-pub struct Bq2515xHighPower<'a, I2C, P>
-where
-    P: OutputPin<Error = Infallible>,
-{
-    inner: &'a mut Bq2515x<I2C>,
-    nlp_pin: &'a mut P,
-}
-
-impl<I2C, P, D> Bq2515xLowPower<I2C, P, D>
-where
-    I2C: I2c,
-    P: OutputPin<Error = Infallible>,
-    D: DelayNs,
-{
-    pub fn new(i2c: I2C, nlp_pin: P, delay: D) -> Self {
-        Self {
-            inner: Bq2515x::new(i2c),
-            nlp_pin,
-            delay,
-        }
+    pub async fn adc_set_mode(&mut self, mode: AdcMode) -> Result<(), I2C::Error> {
+        self.dev
+            .adcctrl()
+            .modify_async(|w| w.adc_read_rate(mode))
+            .await
     }
 
-    pub async fn activate(&mut self) -> Bq2515xHighPower<'_, I2C, P> {
-        let _ = self.nlp_pin.set_high();
-        self.delay.delay_ms(1).await; // tLP_EXIT_I2C
-        Bq2515xHighPower {
-            inner: &mut self.inner,
-            nlp_pin: &mut self.nlp_pin,
-        }
+    pub async fn adc_start_one_shot(&mut self) -> Result<(), I2C::Error> {
+        self.dev
+            .adcctrl()
+            .modify_async(|w| w.adc_read_rate(AdcMode::ManualRead).adc_conv_start(true))
+            .await
     }
-}
 
-impl<'a, I2C, P> Deref for Bq2515xHighPower<'a, I2C, P>
-where
-    P: OutputPin<Error = Infallible>,
-{
-    type Target = Bq2515x<I2C>;
+    pub async fn adc_fetch_latest(&mut self) -> Result<AdcData, I2C::Error> {
+        let channels = self.dev.adc_read_en().read_async().await?;
+        let ilim = self.dev.ilimctrl().read_async().await?.ilim().unwrap();
+        let data = self.dev.adc_data().read_async().await?;
 
-    fn deref(&self) -> &Self::Target {
-        self.inner
-    }
-}
-
-impl<'a, I2C, P> DerefMut for Bq2515xHighPower<'a, I2C, P>
-where
-    P: OutputPin<Error = Infallible>,
-{
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        self.inner
-    }
-}
-
-impl<'a, I2C, P> Drop for Bq2515xHighPower<'a, I2C, P>
-where
-    P: OutputPin<Error = Infallible>,
-{
-    fn drop(&mut self) {
-        let _ = self.nlp_pin.set_low();
+        Ok(AdcData {
+            vin: channels.vin().then(|| RawVoltage(data.vin())),
+            pmid: channels.pmid().then(|| RawVoltage(data.pmid())),
+            iin: channels.iin().then(|| IinCurrent {
+                raw: data.iin(),
+                high_range: ilim > CurrentLimit::_150mA,
+            }),
+            vbat: channels.vbat().then(|| RawVoltage(data.vbat())),
+            ts: channels.ts().then(|| RawVoltage(data.ts())),
+            adcin: channels.adcin().then(|| RawVoltage(data.adcin())),
+            icharge: channels.ichg().then(|| IChargePercentage(data.ichg())),
+        })
     }
 }
