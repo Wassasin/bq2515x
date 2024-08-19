@@ -1,4 +1,6 @@
-pub mod lowpower;
+mod lowpower;
+
+pub use lowpower::*;
 
 use embedded_hal_async::i2c::I2c;
 
@@ -23,7 +25,7 @@ where
         &mut self.dev
     }
 
-    pub async fn adc_set_mode(&mut self, mode: AdcMode) -> Result<(), I2C::Error> {
+    pub async fn adc_set_mode(&mut self, mode: AdcReadRate) -> Result<(), I2C::Error> {
         self.dev
             .adcctrl()
             .modify_async(|w| w.adc_read_rate(mode))
@@ -33,7 +35,10 @@ where
     pub async fn adc_start_one_shot(&mut self) -> Result<(), I2C::Error> {
         self.dev
             .adcctrl()
-            .modify_async(|w| w.adc_read_rate(AdcMode::ManualRead).adc_conv_start(true))
+            .modify_async(|w| {
+                w.adc_read_rate(AdcReadRate::ManualRead)
+                    .adc_conv_start(true)
+            })
             .await
     }
 

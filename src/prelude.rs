@@ -1,18 +1,17 @@
-#[derive(Debug, num_enum::IntoPrimitive, num_enum::TryFromPrimitive)]
-#[repr(u8)]
-pub enum DeviceID {
-    BQ25150 = 0x20,
-    BQ25155 = 0x35,
-    BQ25157 = 0x3C,
-}
+pub use crate::ll::registers::{AdcReadRate, IchargeRange, PmidMode, PmidRegCtrl};
 
-#[derive(Debug, PartialEq, num_enum::IntoPrimitive, num_enum::TryFromPrimitive)]
+#[derive(Debug, PartialEq, PartialOrd, num_enum::IntoPrimitive, num_enum::FromPrimitive)]
 #[repr(u8)]
-pub enum AdcMode {
-    ManualRead = 0b00,
-    Continuous = 0b01,
-    EverySecond = 0b10,
-    EveryMinute = 0b11,
+pub enum AdcCompChannel {
+    #[num_enum(default)]
+    Disabled,
+    AdcIn,
+    TS,
+    VBat,
+    ICharge,
+    Vin,
+    PMid,
+    IIn,
 }
 
 #[derive(Debug, PartialEq, PartialOrd, num_enum::IntoPrimitive, num_enum::TryFromPrimitive)]
@@ -28,20 +27,34 @@ pub enum CurrentLimit {
     _600mA = 0b111,
 }
 
-#[derive(PartialEq, Eq, PartialOrd, Ord)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub struct Millivolts(pub u16);
 
-#[derive(PartialEq, Eq, PartialOrd, Ord)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub struct Milliampere(pub u16);
 
-#[derive(PartialEq, Eq, PartialOrd, Ord)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct RawVoltage<const MAX_MV: u16>(pub u16);
 
-#[derive(PartialEq, Eq, PartialOrd, Ord)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct IinCurrent {
     pub raw: u16,
     pub high_range: bool,
 }
+
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub struct IChargePercentage(pub u16);
+
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, derive_more::From, derive_more::Into)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub struct VBatRegulationVoltage(pub u8);
+
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, derive_more::From, derive_more::Into)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub struct FastChargeCurrent(pub u8);
 
 #[inline(always)]
 fn scale_u16(x: u16, old_range: u16, new_range: u16) -> u16 {
@@ -57,6 +70,28 @@ impl<const MAX_MV: u16> From<RawVoltage<MAX_MV>> for Millivolts {
 impl<const MAX_MV: u16> From<Millivolts> for RawVoltage<MAX_MV> {
     fn from(val: Millivolts) -> Self {
         RawVoltage(scale_u16(val.0, MAX_MV, u16::MAX))
+    }
+}
+
+impl From<VBatRegulationVoltage> for Millivolts {
+    fn from(value: VBatRegulationVoltage) -> Self {
+        let value: u16 = 3600 + value.0 as u16 * 10;
+        Millivolts(value.clamp(3600, 4600))
+    }
+}
+
+impl From<Millivolts> for VBatRegulationVoltage {
+    fn from(value: Millivolts) -> Self {
+        let value = value.0.clamp(3600, 4600);
+        let value = (value - 3600) / 10;
+        VBatRegulationVoltage(value as u8)
+    }
+}
+
+#[cfg(feature = "defmt")]
+impl defmt::Format for Millivolts {
+    fn format(&self, fmt: defmt::Formatter) {
+        defmt::write!(fmt, "{}mV", self.0)
     }
 }
 
@@ -81,7 +116,15 @@ impl From<Milliampere> for IinCurrent {
     }
 }
 
-pub struct IChargePercentage(pub u16);
+impl FastChargeCurrent {
+    pub fn from_milliampere(ma: Milliampere, range: IchargeRange) -> Self {
+        let step_100 = match range {
+            IchargeRange::Step1MilliA25 => 125,
+            IchargeRange::Step2MilliA5 => 250,
+        };
+        Self((ma.0 * 100 / step_100) as u8)
+    }
+}
 
 impl IChargePercentage {
     pub fn to_percentage(&self) -> u8 {
@@ -89,6 +132,8 @@ impl IChargePercentage {
     }
 }
 
+#[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct AdcData {
     pub vin: Option<RawVoltage<6000>>,
     pub pmid: Option<RawVoltage<6000>>,

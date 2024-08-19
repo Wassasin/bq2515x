@@ -3,10 +3,15 @@
 
 use core::u16;
 
-use defmt::{info, unwrap};
+use bq2515x::prelude::*;
+use defmt::info;
 use embassy_executor::Spawner;
-use embassy_nrf::gpio::{Level, Output, OutputDrive};
-use embassy_nrf::{bind_interrupts, peripherals, twim};
+use embassy_nrf::{
+    bind_interrupts,
+    gpio::{Level, Output, OutputDrive},
+    peripherals,
+    twim::{self, Frequency},
+};
 use embassy_time::{Delay, Timer};
 use {defmt_rtt as _, panic_probe as _};
 
@@ -25,6 +30,7 @@ async fn main(_spawner: Spawner) {
     let nlp = Output::new(p.P1_04, Level::Low, OutputDrive::Disconnect0Standard1);
 
     let mut config = twim::Config::default();
+    config.frequency = Frequency::K400;
     // config.sda_pullup = true;
     // config.scl_pullup = true;
     let twim = twim::Twim::new(p.TWISPI0, Irqs, sda, scl, config);
@@ -35,21 +41,51 @@ async fn main(_spawner: Spawner) {
         let mut bq = bq.activate().await;
         let bq = bq.ll();
 
-        let id = bq.device_id().read_async().await;
+        let id = bq.device_id().read_async().await.unwrap();
         info!("{:?}", defmt::Debug2Format(&id));
 
-        let stat = bq.stat().read_async().await;
+        let stat = bq.stat().read_async().await.unwrap();
         info!("{:?}", defmt::Debug2Format(&stat));
 
         Timer::after_millis(1).await;
 
-        let mask = bq.mask().read_async().await;
+        let mask = bq.mask().read_async().await.unwrap();
         info!("{:?}", defmt::Debug2Format(&mask));
 
         Timer::after_millis(1).await;
 
-        let vbat_ctrl = bq.vbat_ctrl().read_async().await;
+        let vbat_ctrl = bq.vbat_ctrl().read_async().await.unwrap();
         info!("{:?}", defmt::Debug2Format(&vbat_ctrl));
+
+        bq.icctrl()
+            .modify_async(|w| {
+                w.pmid_mode(PmidMode::BatOrVin)
+                    .pmid_reg_ctrl(PmidRegCtrl::PassThrough)
+            })
+            .await
+            .unwrap();
+
+        bq.vbat_ctrl()
+            .write_async(|w| w.vbat_reg(Millivolts(4200).into()))
+            .await
+            .unwrap();
+
+        bq.ilimctrl()
+            .write_async(|w| w.ilim(CurrentLimit::_500mA))
+            .await
+            .unwrap();
+
+        let range = IchargeRange::Step2MilliA5;
+
+        bq.pchrgctrl()
+            .modify_async(|w| w.icharge_range(range))
+            .await
+            .unwrap();
+
+        bq.ichg_ctrl()
+            .write_async(|w| w.ichg(FastChargeCurrent::from_milliampere(Milliampere(200), range)))
+            .await
+            .unwrap();
 
         bq.adc_read_en()
             .write_async(|w| w.value(0).vin(true).vbat(true))
@@ -60,38 +96,33 @@ async fn main(_spawner: Spawner) {
     loop {
         {
             let mut bq = bq.activate().await;
-            let bq = bq.ll();
 
-            // purge
-            let flag = bq.flag().read_async().await;
-            info!("{:?}", defmt::Debug2Format(&flag));
+            // Purge flags
+            let _ = bq.ll().flag().read_async().await.unwrap();
 
-            bq.adcctrl()
-                .modify_async(|w| w.adc_conv_start(true))
-                .await
-                .unwrap();
+            bq.adc_start_one_shot().await.unwrap();
 
             loop {
-                let flag = bq.flag().read_async().await.unwrap();
-                if flag.adc_ready() {
+                let stat = bq.ll().stat().read_async().await.unwrap();
+                let flag = bq.ll().flag().read_async().await.unwrap();
+                if stat.vin_vgood() || flag.adc_ready() {
                     break;
                 }
                 Timer::after_millis(1).await;
             }
 
-            let adc_data = bq.adc_data().read_async().await.unwrap();
-            info!("{:?}", defmt::Debug2Format(&adc_data));
-            info!(
-                "vin: {} vbat: {}",
-                to_mv(adc_data.vin(), 6),
-                to_mv(adc_data.vbat(), 6)
-            );
+            let adc_data = bq.adc_fetch_latest().await.unwrap();
+            info!("{:?}", adc_data);
+
+            let vin: Millivolts = adc_data.vin.unwrap().into();
+            let vbat: Millivolts = adc_data.vbat.unwrap().into();
+
+            info!("vin: {} vbat: {}", vin, vbat);
+
+            let stat = bq.ll().stat().read_async().await.unwrap();
+            info!("{:?}", defmt::Debug2Format(&stat));
         }
 
         Timer::after_millis(950).await;
     }
-}
-
-fn to_mv(x: u16, max: u16) -> u16 {
-    (x as u32 * max as u32 * 1000 / u16::MAX as u32) as u16
 }

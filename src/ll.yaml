@@ -142,7 +142,7 @@ registers:
         start: 30
   mask:
     copy_of: flag
-    description: Mask for all flags
+    description: Mask for all flags.
     rw_type: rw
     address: 0x07
   vbat_ctrl:
@@ -151,20 +151,22 @@ registers:
     size_bits: 8
     decription: Battery Regulation Voltage
     fields:
-      vbat_ctrl:
+      vbat_reg:
         type: u8
         start: 0
         end: 7
+        strict_conversion: VBatRegulationVoltage
   ichg_ctrl:
     rw_type: rw
     address: 0x13
     size_bits: 8
     decription: Fast Charge Current
     fields:
-      ichg_ctrl:
+      ichg:
         type: u8
         start: 0
         end: 8
+        strict_conversion: FastChargeCurrent
   pchrgctrl:
     rw_type: rw
     address: 0x14
@@ -176,8 +178,12 @@ registers:
         start: 0
         end: 5
       icharge_range:
-        type: bool
+        type: u8
         start: 7
+        end: 8
+        strict_conversion:
+          step_1milli_A25: default
+          step_2milli_A5:
   termctrl:
     rw_type: rw
     address: 0x15
@@ -265,8 +271,12 @@ registers:
     decription: LDO Control
     fields:
       ldo_switch_config:
-        type: bool
+        type: u8
         start: 1
+        end: 2
+        strict_conversion:
+          LDO: default
+          Switch:
       vldo:
         type: u8
         start: 2
@@ -316,6 +326,11 @@ registers:
         type: u8
         start: 4
         end: 6
+        strict_conversion:
+          t0s6: 0
+          t1s2: default
+          t2s4:
+          t5s0:
       en_ship_mode:
         type: bool
         start: 7
@@ -323,10 +338,19 @@ registers:
         type: u8
         start: 8
         end: 10
+        strict_conversion:
+          bat_or_vin: default
+          bat_only:
+          floating:
+          pull_down:
       pg_mode:
         type: u8
         start: 10
         end: 12
+        strict_conversion:
+          vin_power_good:
+          deglitched_lvl_shifted_nmr:
+          general_purpose_open_drain: default
       adcin_mode:
         type: bool
         start: 13
@@ -334,6 +358,10 @@ registers:
         type: u8
         start: 14
         end: 16
+        strict_conversion:
+          hw_reset: 0
+          do_nothing:
+          ship_mode: default
       charger_disable:
         type: bool
         start: 16
@@ -347,6 +375,15 @@ registers:
         type: u8
         start: 21
         end: 24
+        strict_conversion:
+          battery_tracking:
+          reg4v4:
+          reg4v5: default
+          reg4v6:
+          reg4v7:
+          reg4v8:
+          reg4v9:
+          pass_through:
   adcctrl:
     rw_type: rw
     address: 0x40
@@ -357,10 +394,16 @@ registers:
         type: u8
         start: 0
         end: 3
+        strict_conversion: AdcCompChannel
       adc_conv_speed:
         type: u8
         start: 3
         end: 5
+        strict_conversion:
+          t24ms: default
+          t12ms:
+          t6ms:
+          t3ms:
       adc_conv_start:
         type: bool
         start: 5
@@ -368,19 +411,26 @@ registers:
         type: u8
         start: 6
         end: 8
-        conversion: AdcMode
+        strict_conversion:
+          manual_read: default
+          continuous:
+          every_second:
+          every_minute:
       adc_comp3:
         type: u8
         start: 10
         end: 13
+        strict_conversion: AdcCompChannel
       adc_comp2:
         type: u8
         start: 13
         end: 16
+        strict_conversion: AdcCompChannel
   adc_data:
     rw_type: ro
     address: 0x42
     size_bits: 112
+    description: Most recent ADC samples.
     fields:
       vbat:
         type: u16
@@ -436,6 +486,7 @@ registers:
     rw_type: rw
     address: 0x58
     size_bits: 8
+    description: ADC channels to sample.
     fields:
       adcin:
         type: bool
@@ -499,8 +550,14 @@ registers:
     address: 0x6f
     size_bits: 8
     fields:
-      device_id:
+      device_type:
         type: u8
         start: 0
         end: 8
-        conversion: DeviceID
+        strict_conversion:
+          bq25150: 0x20
+          bq21061: 0x3a
+          bq21062: 0x3b
+          bq25155: 0x35
+          bq25157: 0x3C
+          unknown: default
