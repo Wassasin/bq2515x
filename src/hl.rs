@@ -11,6 +11,12 @@ pub struct Bq2515x<I2C> {
     dev: Bq2515xDevice<I2C>,
 }
 
+pub enum LdoConfig {
+    Off,
+    Switch,
+    Ldo(LDOOutputVoltage),
+}
+
 impl<I2C> Bq2515x<I2C>
 where
     I2C: I2c,
@@ -23,6 +29,20 @@ where
 
     pub fn ll(&mut self) -> &mut Bq2515xDevice<I2C> {
         &mut self.dev
+    }
+
+    pub async fn ldo(&mut self, config: LdoConfig) -> Result<(), I2C::Error> {
+        self.dev
+            .ldoctrl()
+            .write_async(|w| match config {
+                LdoConfig::Off => w.en_ls_ldo(false),
+                LdoConfig::Switch => w.en_ls_ldo(true).ldo_switch_config(LdoSwitchConfig::Switch),
+                LdoConfig::Ldo(v) => w
+                    .en_ls_ldo(true)
+                    .ldo_switch_config(LdoSwitchConfig::Ldo)
+                    .vldo(v),
+            })
+            .await
     }
 
     pub async fn adc_set_mode(&mut self, mode: AdcReadRate) -> Result<(), I2C::Error> {

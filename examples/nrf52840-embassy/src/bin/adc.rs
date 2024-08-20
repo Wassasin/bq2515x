@@ -39,25 +39,25 @@ async fn main(_spawner: Spawner) {
 
     {
         let mut bq = bq.activate().await;
-        let bq = bq.ll();
+        let ll = bq.ll();
 
-        let id = bq.device_id().read_async().await.unwrap();
+        let id = ll.device_id().read_async().await.unwrap();
         info!("{:?}", defmt::Debug2Format(&id));
 
-        let stat = bq.stat().read_async().await.unwrap();
+        let stat = ll.stat().read_async().await.unwrap();
         info!("{:?}", defmt::Debug2Format(&stat));
 
         Timer::after_millis(1).await;
 
-        let mask = bq.mask().read_async().await.unwrap();
+        let mask = ll.mask().read_async().await.unwrap();
         info!("{:?}", defmt::Debug2Format(&mask));
 
         Timer::after_millis(1).await;
 
-        let vbat_ctrl = bq.vbat_ctrl().read_async().await.unwrap();
+        let vbat_ctrl = ll.vbat_ctrl().read_async().await.unwrap();
         info!("{:?}", defmt::Debug2Format(&vbat_ctrl));
 
-        bq.icctrl()
+        ll.icctrl()
             .modify_async(|w| {
                 w.pmid_mode(PmidMode::BatOrVin)
                     .pmid_reg_ctrl(PmidRegCtrl::PassThrough)
@@ -65,30 +65,43 @@ async fn main(_spawner: Spawner) {
             .await
             .unwrap();
 
-        bq.vbat_ctrl()
+        ll.buvlo()
+            .modify_async(|w| w.buvlo_threshold(BuvloThreshold::Uvlo2V8))
+            .await
+            .unwrap();
+
+        ll.vbat_ctrl()
             .write_async(|w| w.vbat_reg(Millivolts(4200).into()))
             .await
             .unwrap();
 
-        bq.ilimctrl()
+        ll.ilimctrl()
             .write_async(|w| w.ilim(CurrentLimit::_500mA))
             .await
             .unwrap();
 
         let range = IchargeRange::Step2MilliA5;
 
-        bq.pchrgctrl()
+        ll.pchrgctrl()
             .modify_async(|w| w.icharge_range(range))
             .await
             .unwrap();
 
-        bq.ichg_ctrl()
+        ll.ichg_ctrl()
             .write_async(|w| w.ichg(FastChargeCurrent::from_milliampere(Milliampere(200), range)))
             .await
             .unwrap();
 
-        bq.adc_read_en()
+        ll.adc_read_en()
             .write_async(|w| w.value(0).vin(true).vbat(true))
+            .await
+            .unwrap();
+    }
+
+    {
+        let mut bq = bq.activate().await;
+
+        bq.ldo(bq2515x::hl::LdoConfig::Ldo(Millivolts(900).into()))
             .await
             .unwrap();
     }

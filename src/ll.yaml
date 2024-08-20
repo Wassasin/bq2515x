@@ -203,17 +203,35 @@ registers:
     size_bits: 8
     decription: Battery Undervoltage
     fields:
-      buvlo:
+      buvlo_threshold:
         type: u8
         start: 0
         end: 3
+        description: Battery UVLO Voltage
+        strict_conversion:
+          uvlo_3v0: default
+          uvlo_2v8: 3
+          uvlo_2v6: 4
+          uvlo_2v4: 5
+          uvlo_2v2: 6
+          disabled: 7
       ibat_ocp_ilim:
         type: u8
         start: 3
         end: 5
+        description: Battery Over-Current Protection Threshold
+        strict_conversion:
+          threshold_1200mA:
+          threshold_1500mA:
+          disabled: default
       vlowv_sel:
-        type: bool
+        type: u8
         start: 5
+        end: 6
+        description: Pre-charge to Fast Charge Threshold
+        strict_conversion:
+          threshold_3v0: default
+          threshold_2v8:
   chargerctrl:
     rw_type: rw
     address: 0x17
@@ -224,6 +242,11 @@ registers:
         type: u8
         start: 1
         end: 3
+        strict_conversion:
+          fast_charge_3hr:
+          fast_charge_6hr: default
+          fast_charge_12hr:
+          disabled:
       twoxtmr_en:
         type: bool
         start: 3
@@ -231,8 +254,13 @@ registers:
         type: bool
         start: 4
       vrh_thresh:
-        type: bool
+        type: u8
         start: 5
+        end: 6
+        description: Recharge Voltage Threshold
+        strict_conversion:
+          threshold_140mV: default
+          threshold_200mV:
       ts_control_mode:
         type: bool
         start: 6
@@ -243,16 +271,37 @@ registers:
         type: u8
         start: 8
         end: 10
+        description: Thermal Charge Current Foldback Threshold
+        strict_conversion:
+          threshold_80c:
+          threshold_85c:
+          threshold_90c: default
+          threshold_95c:
+          threshold_100c:
+          threshold_105c:
+          threshold_110c:
+          disabled:
       dppm_dis:
         type: bool
         start: 10
+        description: Disable Dynamic Power Path Management
       vindpm:
         type: u8
         start: 12
         end: 15
+        strict_conversion:
+          threshold_4v2:
+          threshold_4v3:
+          threshold_4v4:
+          threshold_4v5:
+          threshold_4v6: default
+          threshold_4v7:
+          threshold_4v8:
+          threshold_4v9:
       vindpm_dis:
         type: bool
         start: 15
+        description: Disable Input Voltage Based Dynamic Power Management
   ilimctrl:
     rw_type: rw
     address: 0x19
@@ -281,6 +330,7 @@ registers:
         type: u8
         start: 2
         end: 7
+        strict_conversion: LDOOutputVoltage
       en_ls_ldo:
         type: bool
         start: 7

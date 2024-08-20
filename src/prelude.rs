@@ -1,4 +1,6 @@
-pub use crate::ll::registers::{AdcReadRate, IchargeRange, PmidMode, PmidRegCtrl};
+pub use crate::ll::registers::{
+    AdcReadRate, BuvloThreshold, IchargeRange, LdoSwitchConfig, PmidMode, PmidRegCtrl,
+};
 
 #[derive(Debug, PartialEq, PartialOrd, num_enum::IntoPrimitive, num_enum::FromPrimitive)]
 #[repr(u8)]
@@ -56,6 +58,10 @@ pub struct VBatRegulationVoltage(pub u8);
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct FastChargeCurrent(pub u8);
 
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, derive_more::From, derive_more::Into)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub struct LDOOutputVoltage(pub u8);
+
 #[inline(always)]
 fn scale_u16(x: u16, old_range: u16, new_range: u16) -> u16 {
     (x as u32 * new_range as u32 / old_range as u32) as u16
@@ -85,6 +91,21 @@ impl From<Millivolts> for VBatRegulationVoltage {
         let value = value.0.clamp(3600, 4600);
         let value = (value - 3600) / 10;
         VBatRegulationVoltage(value as u8)
+    }
+}
+
+impl From<LDOOutputVoltage> for Millivolts {
+    fn from(value: LDOOutputVoltage) -> Self {
+        let value: u16 = 600 + value.0 as u16 * 100;
+        Millivolts(value.clamp(600, 3700))
+    }
+}
+
+impl From<Millivolts> for LDOOutputVoltage {
+    fn from(value: Millivolts) -> Self {
+        let value = value.0.clamp(600, 3700);
+        let value = (value - 600) / 100;
+        LDOOutputVoltage(value as u8)
     }
 }
 
