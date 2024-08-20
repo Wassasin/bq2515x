@@ -4,6 +4,8 @@ Rust no-std device driver for the BQ2515x family of Texas Instruments linear bat
 * BQ25150 *Untested*
 * BQ25155 Tested
 * BQ25157 *Untested*
+* bq21061 *Possibly?*
+* bq21062 *Possibly?*
 
 ## Support
 * All low level registers
