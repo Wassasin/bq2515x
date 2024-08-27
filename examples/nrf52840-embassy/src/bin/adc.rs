@@ -26,7 +26,7 @@ async fn main(_spawner: Spawner) {
 
     let sda = p.P1_01;
     let scl = p.P1_02;
-    let nint = p.P1_03;
+    let _nint = p.P1_03;
     let nlp = Output::new(p.P1_04, Level::Low, OutputDrive::Disconnect0Standard1);
 
     let mut config = twim::Config::default();
@@ -96,10 +96,6 @@ async fn main(_spawner: Spawner) {
             .write_async(|w| w.value(0).vin(true).vbat(true))
             .await
             .unwrap();
-    }
-
-    {
-        let mut bq = bq.activate().await;
 
         bq.ldo(bq2515x::hl::LdoConfig::Ldo(Millivolts(900).into()))
             .await
