@@ -8,12 +8,16 @@ use embedded_hal_async::{delay::DelayNs, i2c::I2c};
 
 use super::Bq2515x;
 
+/// Wrapper around [Bq2515x] to manage the *not-low-power* (/LP) pin.
+///
+/// Drop the [Bq2515xHighPower] object to release this higher power mode and return to low power.
 pub struct Bq2515xLowPower<I2C, P, D> {
     inner: Bq2515x<I2C>,
     nlp_pin: P,
     delay: D,
 }
 
+/// Wrapper around [Bq2515x] to indicate that the device is no longer in Low Power mode. Drop to return to Low Power mode.
 pub struct Bq2515xHighPower<'a, I2C, P>
 where
     P: OutputPin<Error = Infallible>,
@@ -36,6 +40,7 @@ where
         }
     }
 
+    /// Activates the I2C interface by pulling the *not-low-power* (/LP) pin down and awaiting the prerequisite time.
     pub async fn activate(&mut self) -> Bq2515xHighPower<'_, I2C, P> {
         let _ = self.nlp_pin.set_high();
         self.delay.delay_ms(1).await; // tLP_EXIT_I2C

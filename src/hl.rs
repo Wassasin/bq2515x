@@ -1,3 +1,5 @@
+//! High level interface for the Bq2515x family of chips providing convenience methods and a Rust-style interface.
+
 mod lowpower;
 
 pub use lowpower::*;
@@ -7,6 +9,12 @@ use embedded_hal_async::i2c::I2c;
 use crate::ll::Bq2515xDevice;
 use crate::prelude::*;
 
+/// High level interface for the Bq2515x family of chips.
+///
+/// Assumes that the device is not in Low Power mode during interactions. This can be managed by either:
+/// * Permanently tying the *not-low-power* (/LP) pin to low.
+/// * Manually pulling the *not-low-power* (/LP) pin to low and awaiting the prequisite time when planning to use the device.
+/// * Use the [Bq2515xLowPower] interface to manage the *not-low-power* (/LP) pin for you.
 pub struct Bq2515x<I2C> {
     dev: Bq2515xDevice<I2C>,
 }
@@ -27,10 +35,16 @@ where
         }
     }
 
+    /// Get access to the underlying low level device.
     pub fn ll(&mut self) -> &mut Bq2515xDevice<I2C> {
         &mut self.dev
     }
 
+    pub fn take(self) -> I2C {
+        self.dev.take()
+    }
+
+    /// Configure the LDO pin.
     pub async fn ldo(&mut self, config: LdoConfig) -> Result<(), I2C::Error> {
         self.dev
             .ldoctrl()
@@ -45,6 +59,7 @@ where
             .await
     }
 
+    /// Set the mode by which the ADC samples.
     pub async fn adc_set_mode(&mut self, mode: AdcReadRate) -> Result<(), I2C::Error> {
         self.dev
             .adcctrl()
@@ -52,6 +67,12 @@ where
             .await
     }
 
+    /// Start an one-shot ADC acquisition.
+    ///
+    /// Sets the ADC mode to 'manual'.
+    ///
+    /// In order to check whether the one shot has completed, you can check the `flags` register.
+    /// Note that when the device is powered by VIN (i.e. Power is Good) the `adc_ready` flag is never set.
     pub async fn adc_start_one_shot(&mut self) -> Result<(), I2C::Error> {
         self.dev
             .adcctrl()
@@ -62,6 +83,7 @@ where
             .await
     }
 
+    /// Fetch the latest ADC acquisition.
     pub async fn adc_fetch_latest(&mut self) -> Result<AdcData, I2C::Error> {
         let channels = self.dev.adc_read_en().read_async().await?;
         let ilim = self.dev.ilimctrl().read_async().await?.ilim().unwrap();

@@ -1,3 +1,5 @@
+//! Low level interface for the Bq2515x family of chips providing register access.
+
 use bitvec::array::BitArray;
 use device_driver::{AddressableDevice, AsyncRegisterDevice};
 use embedded_hal_async::i2c::I2c;
@@ -51,6 +53,10 @@ where
 {
     pub fn new(i2c: I2C) -> Self {
         Self { i2c }
+    }
+
+    pub fn take(self) -> I2C {
+        self.i2c
     }
 }
 
