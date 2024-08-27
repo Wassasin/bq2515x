@@ -2,6 +2,15 @@
 name = "bq2515x"
 version = "0.1.0"
 edition = "2021"
+authors = ["git@woutergeraedts.nl"]
+description = "Device driver for the BQ2515x family of Texas Instruments linear battery chargers."
+readme = "README.md"
+repository = "https://github.com/Wassasin/bq2515x"
+
+license = "MIT OR Apache-2.0"
+keywords = ["embedded", "driver", "battery", "charger"]
+categories = ["embedded", "no-std"]
+exclude = ["Cargo.lock", ".gitignore"]
 
 [dependencies]
 device-driver = "0.7"
