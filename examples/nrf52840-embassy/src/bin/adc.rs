@@ -1,13 +1,12 @@
 #![no_std]
 #![no_main]
 
-use core::u16;
-
 use bq2515x::prelude::*;
 use defmt::info;
 use embassy_executor::Spawner;
 use embassy_nrf::{
     bind_interrupts,
+    config::Reg0Voltage,
     gpio::{Level, Output, OutputDrive},
     peripherals,
     twim::{self, Frequency},
@@ -21,7 +20,12 @@ bind_interrupts!(struct Irqs {
 
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) {
-    let p = embassy_nrf::init(Default::default());
+    let mut config: embassy_nrf::config::Config = Default::default();
+
+    // Configure nRF VDD, see README how to configure the DK jumpers and switches.
+    config.dcdc.reg0_voltage = Some(Reg0Voltage::_1V8);
+
+    let p = embassy_nrf::init(config);
     info!("running!");
 
     let sda = p.P1_01;
@@ -31,8 +35,6 @@ async fn main(_spawner: Spawner) {
 
     let mut config = twim::Config::default();
     config.frequency = Frequency::K400;
-    // config.sda_pullup = true;
-    // config.scl_pullup = true;
     let twim = twim::Twim::new(p.TWISPI0, Irqs, sda, scl, config);
 
     let mut bq = bq2515x::hl::Bq2515xLowPower::new(twim, nlp, Delay);
