@@ -118,6 +118,13 @@ impl defmt::Format for Millivolts {
     }
 }
 
+#[cfg(feature = "defmt")]
+impl defmt::Format for Milliampere {
+    fn format(&self, fmt: defmt::Formatter) {
+        defmt::write!(fmt, "{}mA", self.0)
+    }
+}
+
 impl IinCurrent {
     pub fn range(&self) -> Milliampere {
         Milliampere(if self.high_range { 750 } else { 375 })
